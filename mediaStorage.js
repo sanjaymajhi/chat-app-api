@@ -13,6 +13,6 @@ const storage = cloudinaryStorage({
   cloudinary: cloudinary,
   folder: "chat-app-images",
   allowedFormats: ["jpg", "png"],
-  transformation: [{ width: 500, height: 500, crop: "limit" }],
+  transformation: [{ width: 700, height: 700, crop: "limit" }],
 });
 module.exports.parser = multer({ storage: storage });

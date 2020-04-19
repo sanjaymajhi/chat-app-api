@@ -9,6 +9,8 @@
     "start-both": "concurrently \" npm run devstart\" \" npm run client\" "
   },
   "dependencies": {
+    "acorn": "^7.1.1",
+    "clean-css": "^4.2.3",
     "cloudinary": "^1.21.0",
     "constantinople": "^4.0.1",
     "cookie-parser": "~1.4.4",

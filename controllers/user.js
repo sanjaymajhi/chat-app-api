@@ -17,43 +17,52 @@ exports.profile = (req, res) => {
 };
 
 exports.followPeople = (req, res) => {
-  User.findOne({ username: "@" + req.params.id }).exec((err, person) => {
-    if (err) {
-      throw err;
-    }
-    User.findById(req.user_detail.id).exec(async (err, result) => {
+  async.parallel(
+    {
+      userToDetails: (callback) =>
+        User.findOne({ username: "@" + req.params.id }).exec(callback),
+      userWhoDetails: (callback) =>
+        User.findById(req.user_detail.id).exec(callback),
+    },
+    async (err, result) => {
       if (err) {
         throw err;
       }
-      result.following.push(person._id);
-      var user = new User({
-        f_name: result.f_name,
-        l_name: result.l_name,
-        email: result.email,
-        password: result.password,
-        method: result.method,
-        imageUri: result.imageUri,
-        username: result.username,
-        location: result.location,
-        bio: result.bio,
-        followers: result.followers,
-        following: result.following,
-        join_date: result.join_date,
-        coverImageUri: result.coverImageUri,
-        _id: result._id,
-      });
+      const userToDetails = result.userToDetails;
+      const userWhoDetails = result.userWhoDetails;
 
-      await User.findByIdAndUpdate(user._id, user, (err) => {
+      if (userToDetails.followers.indexOf(userWhoDetails._id) === -1) {
+        userToDetails.followers.push(userWhoDetails._id);
+      } else {
+        let index = userToDetails.followers.indexOf(userWhoDetails._id);
+        userToDetails.followers.splice(index, 1);
+      }
+      if (userWhoDetails.following.indexOf(userToDetails._id) === -1) {
+        userWhoDetails.following.push(userToDetails._id);
+      } else {
+        let index = userWhoDetails.following.indexOf(userToDetails._id);
+        userWhoDetails.following.splice(index, 1);
+      }
+      var userToFollow = new User(userToDetails);
+      var userWhoFollow = new User(userWhoDetails);
+      console.log(userToFollow);
+      console.log(userWhoFollow);
+      await User.findByIdAndUpdate(userToFollow._id, userToFollow, (err) => {
+        if (err) {
+          throw err;
+        }
+      });
+      await User.findByIdAndUpdate(userWhoFollow._id, userWhoFollow, (err) => {
         if (err) {
           throw err;
         }
         res.json({ saved: "success" });
       });
-    });
-  });
+    }
+  );
 };
 
-exports.upload_profile_pic = async (req, res) => {
+exports.upload_pic = async (req, res, type) => {
   const image = {};
   image.url = req.file.url;
   image.id = req.file.public_id;
@@ -61,22 +70,35 @@ exports.upload_profile_pic = async (req, res) => {
     if (err) {
       throw err;
     }
+    if (type === "profile") {
+      var pics = {
+        imageUriId: image.id,
+        imageUri: image.url,
+        coverImageUri: result.coverImageUri,
+        coverImageUriId: result.coverImageUriId,
+      };
+    } else {
+      var pics = {
+        imageUriId: result.imageUriId,
+        imageUri: result.imageUri,
+        coverImageUri: image.url,
+        coverImageUriId: image.id,
+      };
+    }
     var user = new User({
       f_name: result.f_name,
       l_name: result.l_name,
       email: result.email,
       password: result.password,
       method: result.method,
-      imageUri: image.url,
       username: result.username,
       location: result.location,
       bio: result.bio,
       followers: result.followers,
       following: result.following,
       join_date: result.join_date,
-      coverImageUri: result.coverImageUri,
-      imageUriId: image.id,
       _id: result._id,
+      ...pics,
     });
 
     await User.findByIdAndUpdate(user._id, user, (err) => {
@@ -94,7 +116,6 @@ exports.search = (req, res) => {
     "f_name l_name imageUri username"
   ).exec((err, details) => {
     if (details) {
-      console.log(details);
       res.status(200).json(details);
     }
   });
@@ -152,6 +173,7 @@ exports.register = [
           email: req.body.email,
           method: req.body.method,
           imageUri: req.body.imageUri,
+          username: "@" + req.body.email.split("@")[0],
         });
 
         await user.save((err) => {

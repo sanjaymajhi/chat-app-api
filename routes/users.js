@@ -16,7 +16,14 @@ router.post(
   "/profile/upload/profile-image",
   auth,
   mediaStorage.parser.single("image"),
-  userController.upload_profile_pic
+  (req, res) => userController.upload_pic(req, res, "profile")
+);
+
+router.post(
+  "/profile/upload/profile-cover-image",
+  auth,
+  mediaStorage.parser.single("image"),
+  (req, res) => userController.upload_pic(req, res, "profile-cover")
 );
 
 module.exports = router;
