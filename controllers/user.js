@@ -1,7 +1,6 @@
 var async = require("async");
-var mongoose = require("mongoose");
 var bcrypt = require("bcrypt");
-var jwt = require("jsonwebtoken"); //for recaptcha
+var jwt = require("jsonwebtoken");
 var validator = require("express-validator");
 
 var User = require("../models/user");
@@ -9,7 +8,7 @@ var User = require("../models/user");
 exports.profile = (req, res) => {
   User.findOne({ username: req.body.username }).exec((err, details) => {
     if (details) {
-      res.status(200).json(details);
+      res.status(200).json({ details: details, id: req.user_detail.id });
     } else {
       res.send("no token");
     }
@@ -136,9 +135,6 @@ exports.register = [
     .isLength({ min: 8, max: 15 }),
   validator.body("email", "Invalid Email").trim().isEmail(),
 
-  validator.sanitizeBody("f_name").escape(),
-  validator.sanitizeBody("l_name").escape(),
-
   (req, res) => {
     if (req.body.method === "native") {
       const errors = validator.validationResult(req);
@@ -167,8 +163,10 @@ exports.register = [
           req.body.imageUri = undefined;
         }
         var user = new User({
-          f_name: req.body.f_name,
-          l_name: req.body.l_name,
+          f_name:
+            req.body.f_name.charAt(0).toUpperCase() + req.body.f_name.slice(1),
+          l_name:
+            req.body.l_name.charAt(0).toUpperCase() + req.body.l_name.slice(1),
           password: password,
           email: req.body.email,
           method: req.body.method,
@@ -212,10 +210,7 @@ exports.user_update_post = [
     .trim()
     .isLength({ min: 10, max: 200 }),
 
-  validator.sanitizeBody("*").escape(),
-
   (req, res) => {
-    console.log(req.body);
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
       res.json({
@@ -224,46 +219,66 @@ exports.user_update_post = [
       });
       return;
     }
-    User.findOne({ username: "@" + req.body.username }).exec((err, result) => {
-      if (err) {
-        throw err;
-      }
-      if (result) {
-        res.json({
-          saved: "unsuccessful",
-          error: { msg: "Username already exists..." },
-        });
-        return;
-      } else {
-        User.findOne({ _id: req.user_detail.id }).exec(async (err, result) => {
-          if (err) {
-            throw err;
-          }
-          var user = new User({
-            f_name: req.body.f_name,
-            l_name: req.body.l_name,
-            email: result.email,
-            password: result.password,
-            method: result.method,
-            imageUri: result.imageUri,
-            username: "@" + req.body.username,
-            location: req.body.location,
-            bio: req.body.bio,
-            followers: result.followers,
-            following: result.following,
-            join_date: result.join_date,
-            coverImageUri: result.coverImageUri,
-            _id: result._id,
+
+    async.parallel(
+      {
+        usernameCheck: (callback) =>
+          User.findOne({ username: "@" + req.body.username }).exec(callback),
+        user_details: (callback) =>
+          User.findOne({ _id: req.user_detail.id }).exec(callback),
+      },
+      (err, result) => {
+        if (err) {
+          throw err;
+        }
+        const usernameCheck = result.usernameCheck;
+        const user_details = result.user_details;
+        if (
+          usernameCheck != undefined &&
+          user_details.username !== usernameCheck.username
+        ) {
+          res.json({
+            saved: "unsuccessful",
+            error: { msg: "Username already exists..." },
           });
-          await User.findByIdAndUpdate(user._id, user, (err) => {
-            if (err) {
-              throw err;
+          return;
+        } else {
+          User.findOne({ _id: req.user_detail.id }).exec(
+            async (err, result) => {
+              if (err) {
+                throw err;
+              }
+              var user = new User({
+                f_name:
+                  req.body.f_name.charAt(0).toUpperCase() +
+                  req.body.f_name.slice(1),
+                l_name:
+                  req.body.l_name.charAt(0).toUpperCase() +
+                  req.body.l_name.slice(1),
+                email: result.email,
+                password: result.password,
+                method: result.method,
+                imageUri: result.imageUri,
+                username: "@" + req.body.username,
+                location: req.body.location,
+                bio: req.body.bio,
+                followers: result.followers,
+                following: result.following,
+                join_date: result.join_date,
+                coverImageUri: result.coverImageUri,
+                _id: result._id,
+              });
+              await User.findByIdAndUpdate(user._id, user, (err) => {
+                if (err) {
+                  throw err;
+                }
+                res.json({ saved: "success" });
+              });
             }
-            res.json({ saved: "success" });
-          });
-        });
+          );
+        }
       }
-    });
+    );
   },
 ];
 
@@ -271,10 +286,9 @@ exports.login = [
   validator
     .body("email", "Invalid Email or Password")
     .isLength({ min: 5 })
-    .trim(),
+    .trim()
+    .isEmail(),
   validator.body("password", "Invalid Password").isLength({ min: 5 }).trim(),
-
-  validator.sanitizeBody("*").escape(),
 
   (req, res) => {
     if (req.body.method === "native") {
@@ -288,56 +302,61 @@ exports.login = [
       }
     }
 
-    User.findOne({ email: req.body.email }, "email password username").exec(
-      async (err, result) => {
-        if (err) {
-          throw err;
-        }
-        if (!result) {
-          res.json({
-            saved: "unsuccessful",
-            error: { msg: "Email does not exists" },
-          });
-          return;
-        } else {
-          if (req.body.method === "native") {
-            const isMatch = await bcrypt.compare(
-              req.body.password,
-              result.password
-            );
-
-            if (!isMatch) {
-              res.json({
-                saved: "unsuccessful",
-                error: { msg: "Incorrect password" },
-              });
-              return;
-            }
-          }
-
-          var payload = {
-            user: {
-              id: result._id,
-            },
-          };
-          await jwt.sign(
-            payload,
-            "sanjay",
-            { expiresIn: 10000 },
-            (err, token) => {
-              if (err) {
-                throw err;
-              }
-              res.status(200).json({
-                saved: "success",
-                token: token,
-                username: result.username.split("@")[1],
-              });
-            }
-          );
-        }
+    User.findOne(
+      { email: req.body.email },
+      "email password username f_name l_name imageUri"
+    ).exec(async (err, result) => {
+      if (err) {
+        throw err;
       }
-    );
+      if (!result) {
+        res.json({
+          saved: "unsuccessful",
+          error: { msg: "Email does not exists" },
+        });
+        return;
+      } else {
+        if (req.body.method === "native") {
+          const isMatch = await bcrypt.compare(
+            req.body.password,
+            result.password
+          );
+
+          if (!isMatch) {
+            res.json({
+              saved: "unsuccessful",
+              error: { msg: "Incorrect password" },
+            });
+            return;
+          }
+        }
+
+        var payload = {
+          user: {
+            id: result._id,
+          },
+        };
+        await jwt.sign(
+          payload,
+          "sanjay",
+          { expiresIn: 10000 },
+          (err, token) => {
+            if (err) {
+              throw err;
+            }
+            res.status(200).json({
+              saved: "success",
+              token: token,
+              _id: result._id,
+              username: result.username.split("@")[1],
+              f_name: result.f_name,
+              l_name: result.l_name,
+              imageUri: result.imageUri,
+            });
+          }
+        );
+      }
+    });
   },
 ];
 
@@ -351,8 +370,6 @@ exports.change_pass = [
     .isLength({ min: 8, max: 15 })
     .trim(),
 
-  validator.sanitizeBody("c_pass").escape(),
-  validator.sanitizeBody("n_pass").escape(),
   (req, res) => {
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {

@@ -21,6 +21,7 @@ const User = new Schema({
   coverImageUri: { type: String, default: "" },
   imageUriId: { type: String, default: "" },
   coverImageUriId: { type: String, default: "" },
+  posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
 });
 
 module.exports = mongoose.model("Chat_User", User);
