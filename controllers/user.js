@@ -111,9 +111,14 @@ exports.upload_pic = async (req, res, type) => {
 
 exports.search = (req, res) => {
   User.find(
-    { username: new RegExp(req.body.name, "i") },
+    {
+      f_name: new RegExp(req.body.value, "i"),
+    },
     "f_name l_name imageUri username"
   ).exec((err, details) => {
+    if (err) {
+      throw err;
+    }
     if (details) {
       res.status(200).json(details);
     }
@@ -267,6 +272,7 @@ exports.user_update_post = [
                 join_date: result.join_date,
                 coverImageUri: result.coverImageUri,
                 _id: result._id,
+                posts: result.posts,
               });
               await User.findByIdAndUpdate(user._id, user, (err) => {
                 if (err) {

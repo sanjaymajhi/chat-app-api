@@ -48,4 +48,6 @@ router.post(
   messageController.sendMessage
 );
 
+router.post("/homePosts", auth, postController.homePosts);
+
 module.exports = router;

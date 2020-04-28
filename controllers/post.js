@@ -80,3 +80,39 @@ exports.like_post = (req, res) => {
     });
   });
 };
+
+exports.homePosts = (req, res) => {
+  User.findById(req.user_detail.id)
+    .populate({
+      path: "following",
+      populate: {
+        path: "posts",
+      },
+    })
+    .populate({
+      path: "following",
+      populate: {
+        path: "following",
+        populate: {
+          path: "posts",
+        },
+      },
+    })
+    .exec((err, result) => {
+      if (result) {
+        var data = [];
+        result.following.map((item) => {
+          item.posts.map((post) => {
+            data.push({
+              ...post._doc,
+              name: item.f_name + " " + item.l_name,
+              username: item.username,
+              user_imageUri: item.imageUri,
+              user_id: item._id,
+            });
+          });
+        });
+        res.json({ saved: "success", details: data });
+      }
+    });
+};
