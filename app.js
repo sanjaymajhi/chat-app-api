@@ -45,7 +45,9 @@ app.use(function (err, req, res, next) {
 });
 
 var mongoose = require("mongoose");
-var mongoDB = process.env.MONGODB_URI;
+var mongoURI =
+  "mongodb+srv://sanjay:1Sanjay@@cluster0-1naxh.mongodb.net/test?retryWrites=true&w=majority";
+var mongoDB = process.env.MONGODB_URI || mongoURI;
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 var db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
