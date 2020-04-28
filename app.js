@@ -11,6 +11,10 @@ var dotenv = require("dotenv");
 dotenv.config();
 var app = express();
 
+var helmet = require("helmet");
+var compression = require("compression");
+app.use(helmet());
+app.use(compression());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
