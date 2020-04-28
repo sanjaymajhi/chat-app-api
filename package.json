@@ -8,9 +8,13 @@
     "client": "cd ../chat-app-client && npm start",
     "start-both": "concurrently \" npm run devstart\" \" npm run client\" "
   },
+  "engines": {
+    "node": "12.16.2"
+  },
   "dependencies": {
     "acorn": "^7.1.1",
     "async": "^3.2.0",
+    "bcrypt": "^4.0.1",
     "clean-css": "^4.2.3",
     "cloudinary": "^1.21.0",
     "constantinople": "^4.0.1",
