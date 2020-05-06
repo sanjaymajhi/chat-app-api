@@ -61,7 +61,8 @@ exports.followPeople = (req, res) => {
   );
 };
 
-exports.upload_pic = async (req, res, type) => {
+exports.upload_pic = async (req, res) => {
+  const type = req.params.type;
   const image = {};
   image.url = req.file.url;
   image.id = req.file.public_id;
@@ -84,21 +85,10 @@ exports.upload_pic = async (req, res, type) => {
         coverImageUriId: image.id,
       };
     }
-    var user = new User({
-      f_name: result.f_name,
-      l_name: result.l_name,
-      email: result.email,
-      password: result.password,
-      method: result.method,
-      username: result.username,
-      location: result.location,
-      bio: result.bio,
-      followers: result.followers,
-      following: result.following,
-      join_date: result.join_date,
-      _id: result._id,
-      ...pics,
-    });
+
+    var user_detail = { ...result._doc, ...pics };
+    console.log(user_detail);
+    var user = new User(user_detail);
 
     await User.findByIdAndUpdate(user._id, user, (err) => {
       if (err) {

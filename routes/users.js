@@ -15,17 +15,10 @@ router.post("/profile/:id/follow", auth, userController.followPeople);
 router.post("/update", auth, userController.user_update_post);
 router.post("/search", userController.search);
 router.post(
-  "/profile/upload/profile-image",
+  "/profile/upload/:type",
   auth,
   mediaStorage.parser.single("image"),
-  (req, res) => userController.upload_pic(req, res, "profile")
-);
-
-router.post(
-  "/profile/upload/profile-cover-image",
-  auth,
-  mediaStorage.parser.single("image"),
-  (req, res) => userController.upload_pic(req, res, "profile-cover")
+  userController.upload_pic
 );
 
 router.post(
@@ -35,9 +28,25 @@ router.post(
   postController.create_post
 );
 
+router.get("/post/:id", auth, postController.find_post);
+
+router.post(
+  "/profile/post/comment",
+  auth,
+  mediaStorage.parser.single("image"),
+  postController.create_comment
+);
+
+router.post(
+  "/profile/post/commentOnComment",
+  auth,
+  mediaStorage.parser.single("image"),
+  postController.commentOnComment
+);
+
 router.post("/profile/:id/posts", auth, postController.user_posts);
 
-router.post("/posts/like", auth, postController.like_post);
+router.post("/posts/:type", auth, postController.like_share_post);
 
 router.post("/friend-list", auth, messageController.friend_list);
 router.post("/messages", auth, messageController.getMessages);
