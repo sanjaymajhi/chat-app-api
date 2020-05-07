@@ -180,7 +180,15 @@ exports.find_post = (req, res) => {
   async.parallel(
     {
       post_detail: (callback) =>
-        Post.findById(req.params.id).populate("comments").exec(callback),
+        Post.findById(req.params.id)
+          .populate({
+            path: "comments",
+            populate: {
+              path: "userId",
+              select: "imageUri f_name l_name username",
+            },
+          })
+          .exec(callback),
       user_detail: (callback) =>
         User.findOne({ posts: req.params.id }).exec(callback),
     },

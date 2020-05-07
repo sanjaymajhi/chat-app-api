@@ -1,7 +1,7 @@
 var jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-  const token = req.body.token || req.headers.token;
+  const token = req.headers.authorization.split(" ")[1];
   if (!token) {
     res.json({
       saved: "unsuccessful",

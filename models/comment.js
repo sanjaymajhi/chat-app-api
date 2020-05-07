@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const Comment = new Schema({
-  userId: [{ type: Schema.Types.ObjectId, ref: "Chat_User" }],
+  userId: { type: Schema.Types.ObjectId, ref: "Chat_User" },
   postText: { type: String, required: true, max: 400 },
   postImg: { type: String },
   postImgId: { type: String },

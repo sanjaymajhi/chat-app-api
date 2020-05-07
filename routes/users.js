@@ -11,7 +11,7 @@ var mediaStorage = require("../mediaStorage");
 router.post("/login", userController.login);
 router.post("/register", userController.register);
 router.post("/profile", auth, userController.profile);
-router.post("/profile/:id/follow", auth, userController.followPeople);
+router.get("/profile/:id/follow", auth, userController.followPeople);
 router.post("/update", auth, userController.user_update_post);
 router.post("/search", userController.search);
 router.post(
@@ -44,11 +44,11 @@ router.post(
   postController.commentOnComment
 );
 
-router.post("/profile/:id/posts", auth, postController.user_posts);
+router.get("/profile/:id/posts", auth, postController.user_posts);
 
 router.post("/posts/:type", auth, postController.like_share_post);
 
-router.post("/friend-list", auth, messageController.friend_list);
+router.get("/friend-list", auth, messageController.friend_list);
 router.post("/messages", auth, messageController.getMessages);
 router.post(
   "/sendMsg",
@@ -57,6 +57,8 @@ router.post(
   messageController.sendMessage
 );
 
-router.post("/homePosts", auth, postController.homePosts);
+router.get("/homePosts", auth, postController.homePosts);
+
+router.get("/notifications", auth, userController.get_notifications);
 
 module.exports = router;

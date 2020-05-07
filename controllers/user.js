@@ -416,3 +416,5 @@ exports.change_pass = [
     });
   },
 ];
+
+exports.get_notifications = (req, res) => {};
