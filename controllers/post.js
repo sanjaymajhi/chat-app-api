@@ -5,6 +5,7 @@ const Post = require("../models/post");
 const User = require("../models/user");
 const Comment = require("../models/comment");
 const Sub_Comment = require("../models/sub_comments");
+const NotificationController = require("../controllers/notification");
 
 exports.create_post = [
   validator
@@ -68,20 +69,20 @@ exports.user_posts = (req, res) => {
 
 exports.like_share_post = (req, res) => {
   const type = req.params.type;
-  Post.findById(req.body.post_id).exec((err, result) => {
+  Post.findById(req.body.postId).exec(async (err, result) => {
     if (err) {
       throw err;
     }
-
+    var index;
     if (type === "like") {
-      const index = result.likes.indexOf(req.user_detail.id);
+      index = result.likes.indexOf(req.user_detail.id);
       if (index === -1) {
         result.likes.push(req.user_detail.id);
       } else {
         result.likes.splice(index, 1);
       }
     } else {
-      const index = result.shares.indexOf(req.user_detail.id);
+      index = result.shares.indexOf(req.user_detail.id);
       if (index === -1) {
         result.shares.push(req.user_detail.id);
       } else {
@@ -89,9 +90,19 @@ exports.like_share_post = (req, res) => {
       }
     }
     var post = new Post(result);
-    post.save((err) => {
+    post.save(async (err) => {
       if (err) {
         throw err;
+      }
+      if (index === -1) {
+        await User.findOne({ posts: req.body.postId }).exec((err, result) => {
+          if (err) {
+            throw err;
+          }
+          if (result) {
+            NotificationController.set_notifications(req, res, type, result);
+          }
+        });
       }
       res.json({ saved: "success" });
     });
@@ -139,7 +150,7 @@ exports.create_comment = [
     .body("post-text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
   (req, res) => {
-    console.log(req.body.postId);
+    console.log(req.body);
     Post.findById(req.body.postId).exec(async (err, result) => {
       if (err) {
         throw err;
@@ -164,10 +175,21 @@ exports.create_comment = [
           }
           result.comments.push(comment._id);
           var post = new Post(result);
-          await Post.findByIdAndUpdate(post._id, post, {}, (err) => {
+          await Post.findByIdAndUpdate(post._id, post, {}, async (err) => {
             if (err) {
               throw err;
             }
+            await User.findOne({ posts: post._id }).exec((err, result) => {
+              if (err) {
+                throw err;
+              }
+              NotificationController.set_notifications(
+                req,
+                res,
+                "comment",
+                result
+              );
+            });
             res.json({ saved: "success" });
           });
         });

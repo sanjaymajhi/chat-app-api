@@ -4,6 +4,7 @@ var jwt = require("jsonwebtoken");
 var validator = require("express-validator");
 
 var User = require("../models/user");
+var notificationController = require("../controllers/notification");
 
 exports.profile = (req, res) => {
   User.findOne({ username: req.body.username }).exec((err, details) => {
@@ -29,9 +30,11 @@ exports.followPeople = (req, res) => {
       }
       const userToDetails = result.userToDetails;
       const userWhoDetails = result.userWhoDetails;
+      var shouldSendNotific = false;
 
       if (userToDetails.followers.indexOf(userWhoDetails._id) === -1) {
         userToDetails.followers.push(userWhoDetails._id);
+        shouldSendNotific = true;
       } else {
         let index = userToDetails.followers.indexOf(userWhoDetails._id);
         userToDetails.followers.splice(index, 1);
@@ -44,12 +47,18 @@ exports.followPeople = (req, res) => {
       }
       var userToFollow = new User(userToDetails);
       var userWhoFollow = new User(userWhoDetails);
-      console.log(userToFollow);
-      console.log(userWhoFollow);
       await User.findByIdAndUpdate(userToFollow._id, userToFollow, (err) => {
         if (err) {
           throw err;
         }
+        shouldSendNotific
+          ? notificationController.set_notifications(
+              req,
+              res,
+              "follow",
+              userToFollow
+            )
+          : "";
       });
       await User.findByIdAndUpdate(userWhoFollow._id, userWhoFollow, (err) => {
         if (err) {
@@ -416,5 +425,3 @@ exports.change_pass = [
     });
   },
 ];
-
-exports.get_notifications = (req, res) => {};

@@ -14,8 +14,8 @@ const Notification = new Schema({
   },
   postId: {
     type: Schema.Types.ObjectId,
-    required: type !== follow ? true : false,
   },
+  datetime: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Notification", Notification);

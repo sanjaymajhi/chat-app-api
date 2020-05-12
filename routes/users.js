@@ -4,6 +4,8 @@ var router = express.Router();
 var userController = require("../controllers/user");
 var postController = require("../controllers/post");
 var messageController = require("../controllers/messages");
+var notificationController = require("../controllers/notification");
+
 var auth = require("../auth");
 var mediaStorage = require("../mediaStorage");
 
@@ -58,7 +60,6 @@ router.post(
 );
 
 router.get("/homePosts", auth, postController.homePosts);
-
-router.get("/notifications", auth, userController.get_notifications);
+router.get("/notifications", auth, notificationController.get_notifications);
 
 module.exports = router;
