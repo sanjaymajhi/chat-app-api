@@ -274,3 +274,34 @@ exports.commentOnComment = [
     });
   },
 ];
+
+exports.trending_posts = (req, res) => {
+  const fromIndex = Number(req.params.index);
+  Post.aggregate([
+    {
+      $project: {
+        postText: 1,
+        postImg: 1,
+        postGif: 1,
+        likes: 1,
+        shares: 1,
+        comments: 1,
+        date: 1,
+        likesLenght: { $size: "$likes" },
+        sharesLength: { $size: "$shares" },
+        commentsLength: { $size: "$comments" },
+      },
+    },
+    { $sort: { likesLength: -1, sharesLength: -1, commentsLength: -1 } },
+  ]).exec((err, result) => {
+    if (err) {
+      throw err;
+    }
+    if (result) {
+      res.json({
+        saved: "success",
+        data: result.slice(fromIndex, fromIndex + 5),
+      });
+    }
+  });
+};

@@ -3,7 +3,7 @@ var jwt = require("jsonwebtoken");
 module.exports = (req, res, next) => {
   const token = req.headers.authorization.split(" ")[1];
   if (!token) {
-    res.json({
+    res.status(403).json({
       saved: "unsuccessful",
       error: { msg: "You are not logged in..." },
     });

@@ -59,7 +59,14 @@ router.post(
   messageController.sendMessage
 );
 
-router.get("/homePosts", auth, postController.homePosts);
+router.get("/homePosts/", auth, postController.homePosts);
 router.get("/notifications", auth, notificationController.get_notifications);
+
+router.get("/friend-suggesstions", auth, userController.friend_suggesstions);
+router.get(
+  "/get-trending-posts/from/:index",
+  auth,
+  postController.trending_posts
+);
 
 module.exports = router;

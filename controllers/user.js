@@ -252,27 +252,19 @@ exports.user_update_post = [
               if (err) {
                 throw err;
               }
-              var user = new User({
+              var userCopy = {
+                ...result._doc,
                 f_name:
                   req.body.f_name.charAt(0).toUpperCase() +
                   req.body.f_name.slice(1),
                 l_name:
                   req.body.l_name.charAt(0).toUpperCase() +
                   req.body.l_name.slice(1),
-                email: result.email,
-                password: result.password,
-                method: result.method,
-                imageUri: result.imageUri,
                 username: "@" + req.body.username,
                 location: req.body.location,
                 bio: req.body.bio,
-                followers: result.followers,
-                following: result.following,
-                join_date: result.join_date,
-                coverImageUri: result.coverImageUri,
-                _id: result._id,
-                posts: result.posts,
-              });
+              };
+              var user = new User(userCopy);
               await User.findByIdAndUpdate(user._id, user, (err) => {
                 if (err) {
                   throw err;
@@ -307,10 +299,7 @@ exports.login = [
       }
     }
 
-    User.findOne(
-      { email: req.body.email },
-      "email password username f_name l_name imageUri"
-    ).exec(async (err, result) => {
+    User.findOne({ email: req.body.email }).exec(async (err, result) => {
       if (err) {
         throw err;
       }
@@ -344,11 +333,21 @@ exports.login = [
         await jwt.sign(
           payload,
           "sanjay",
-          { expiresIn: 10000 },
-          (err, token) => {
+          { expiresIn: 3600 },
+          async (err, token) => {
             if (err) {
               throw err;
             }
+            var userCopy = {
+              ...result._doc,
+              last_login: Date.now(),
+              isLoggedIn: true,
+            };
+            await User.findByIdAndUpdate(userCopy._id, userCopy, {}, (err) => {
+              if (err) {
+                throw err;
+              }
+            });
             res.status(200).json({
               saved: "success",
               token: token,
@@ -402,18 +401,8 @@ exports.change_pass = [
         } else {
           var salt = await bcrypt.genSalt(10);
           var password = await bcrypt.hash(req.body.n_pass, salt);
-          var user = new User({
-            f_name: result.f_name,
-            l_name: result.l_name,
-            dob: result.dob,
-            mobile: result.mobile,
-            username: result.username,
-            password: password,
-            gender: result.gender,
-            email: result.email,
-            _id: req.user_detail.id,
-            trains_booked: result.trains_booked,
-          });
+          var userCopy = result;
+          var user = new User({});
           await User.findByIdAndUpdate(user._id, user, (err) => {
             if (err) {
               throw err;
@@ -425,3 +414,43 @@ exports.change_pass = [
     });
   },
 ];
+
+exports.friend_suggesstions = (req, res) => {
+  User.findById(req.user_detail.id)
+    .select("following")
+    .populate({
+      path: "following",
+      select: "following",
+      populate: {
+        path: "following",
+        select: "_id f_name l_name username imageUri",
+      },
+    })
+    .exec((err, result) => {
+      if (err) {
+        throw err;
+      }
+      if (result) {
+        //own id and own friends id
+        const notNeeded = [];
+        result.following.map((item) => notNeeded.push(item._id.toString()));
+        notNeeded.push(req.user_detail.id);
+
+        //new friend suggesstions
+        const ids = [];
+        const data = [];
+        result.following.map((item) => {
+          item.following.map((people) => {
+            if (
+              ids.indexOf(people._id) === -1 &&
+              notNeeded.indexOf(people._id.toString()) === -1
+            ) {
+              ids.push(people._id);
+              data.push(people);
+            }
+          });
+        });
+        res.json({ saved: "success", data: data });
+      }
+    });
+};

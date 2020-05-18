@@ -21,6 +21,10 @@ exports.friend_list = (req, res) => {
             name: item.f_name + " " + item.l_name,
             username: item.username.split("@")[1],
             imageUri: item.imageUri,
+            isOnline:
+              new Date() - new Date(item.last_login) < 3600
+                ? item.isLoggedIn === true
+                : false,
           })
         );
 
