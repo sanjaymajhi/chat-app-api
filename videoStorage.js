@@ -10,11 +10,13 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-const storageImage = cloudinaryStorage({
+const storageVideo = cloudinaryStorage({
   cloudinary: cloudinary,
-  folder: "chat-app-images",
-  allowedFormats: ["jpg", "png"],
-  transformation: [{ width: 700, height: 700, crop: "limit" }],
+  params: {
+    folder: "chat-app-videos",
+    format: "mp4",
+    resource_type: "video",
+  },
 });
 
-module.exports.parserImage = multer({ storage: storageImage });
+module.exports.parserVideo = multer({ storage: storageVideo });

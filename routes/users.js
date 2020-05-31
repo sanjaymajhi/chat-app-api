@@ -8,6 +8,7 @@ var notificationController = require("../controllers/notification");
 
 var auth = require("../auth");
 var mediaStorage = require("../mediaStorage");
+var videoStorage = require("../videoStorage");
 
 /* GET users listing. */
 router.post("/login", userController.login);
@@ -19,14 +20,21 @@ router.post("/search", userController.search);
 router.post(
   "/profile/upload/:type",
   auth,
-  mediaStorage.parser.single("image"),
+  mediaStorage.parserImage.single("image"),
   userController.upload_pic
 );
 
 router.post(
-  "/profile/post",
+  "/profile/postWithImage",
   auth,
-  mediaStorage.parser.single("image"),
+  mediaStorage.parserImage.array("image", 4),
+  postController.create_post
+);
+
+router.post(
+  "/profile/postWithVideo",
+  auth,
+  videoStorage.parserVideo.single("post-video"),
   postController.create_post
 );
 
@@ -35,14 +43,14 @@ router.get("/post/:id", auth, postController.find_post);
 router.post(
   "/profile/post/comment",
   auth,
-  mediaStorage.parser.single("image"),
+  mediaStorage.parserImage.single("image"),
   postController.create_comment
 );
 
 router.post(
   "/profile/post/commentOnComment",
   auth,
-  mediaStorage.parser.single("image"),
+  mediaStorage.parserImage.single("image"),
   postController.commentOnComment
 );
 
@@ -55,7 +63,7 @@ router.post("/messages", auth, messageController.getMessages);
 router.post(
   "/sendMsg",
   auth,
-  mediaStorage.parser.single("image"),
+  mediaStorage.parserImage.single("image"),
   messageController.sendMessage
 );
 

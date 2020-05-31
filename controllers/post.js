@@ -4,7 +4,6 @@ var validator = require("express-validator");
 const Post = require("../models/post");
 const User = require("../models/user");
 const Comment = require("../models/comment");
-const Sub_Comment = require("../models/sub_comments");
 const NotificationController = require("../controllers/notification");
 
 exports.create_post = [
@@ -12,6 +11,7 @@ exports.create_post = [
     .body("post-text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
   async (req, res) => {
+    console.log(req.file);
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
       res.json({
@@ -20,16 +20,27 @@ exports.create_post = [
       });
       return;
     }
-    var post_detail = { postText: req.body["post-text"] };
-    if (req.file) {
-      post_detail.postImg = req.file.url;
-      post_detail.postImgId = req.file.public_id;
-    } else {
-      if (req.body["post-gif"] !== "undefined") {
-        post_detail.postGif = req.body["post-gif"];
-      }
+    var post_detail = {
+      postText: req.body["post-text"] !== "null" ? req.body["post-text"] : null,
+      embedLink: req.body.embedLink !== "null" ? req.body.embedLink : null,
+      postImg: [],
+      postImgId: [],
+      postVideo: null,
+      postVideoId: null,
+    };
+    console.log(req.body);
+    if (req.body["image"] !== "null") {
+      req.files.map((file) => {
+        post_detail.postImg.push(file.url);
+        post_detail.postImgId.push(file.public_id);
+      });
+    }
+    if (req.body["post-video"] !== "null") {
+      post_detail.postVideo = req.file.url;
+      post_detail.postVideoId = req.file.public_id;
     }
     var post = new Post(post_detail);
+    console.log(post);
     await post.save((err) => {
       if (err) {
         throw err;
@@ -287,6 +298,8 @@ exports.trending_posts = (req, res) => {
         shares: 1,
         comments: 1,
         date: 1,
+        embedLink: 1,
+        postVideo: 1,
         likesLenght: { $size: "$likes" },
         sharesLength: { $size: "$shares" },
         commentsLength: { $size: "$comments" },
