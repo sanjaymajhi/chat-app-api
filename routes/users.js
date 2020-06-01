@@ -43,7 +43,7 @@ router.get("/post/:id", auth, postController.find_post);
 router.post(
   "/profile/post/comment",
   auth,
-  mediaStorage.parserImage.single("image"),
+  mediaStorage.parserImage.array("image", 4),
   postController.create_comment
 );
 

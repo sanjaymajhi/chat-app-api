@@ -15,18 +15,18 @@ exports.friend_list = (req, res) => {
       }
       if (result) {
         const data = [];
-        result.following.map((item) =>
+        result.following.map((item) => {
           data.push({
             id: item._id,
             name: item.f_name + " " + item.l_name,
             username: item.username.split("@")[1],
             imageUri: item.imageUri,
             isOnline:
-              new Date() - new Date(item.last_login) < 3600
+              new Date() - new Date(item.last_login) < 3600000
                 ? item.isLoggedIn === true
                 : false,
-          })
-        );
+          });
+        });
 
         res.json({ saved: "success", data: data });
       }
