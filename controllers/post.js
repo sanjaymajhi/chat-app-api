@@ -27,6 +27,7 @@ exports.create_post = [
       postImgId: [],
       postVideo: null,
       postVideoId: null,
+      user_id: req.user_detail.id,
     };
     console.log(req.body);
     if (req.body["image"] !== "null") {
@@ -168,14 +169,20 @@ exports.create_comment = [
       }
       if (result) {
         var comment_detail = {
-          postText: req.body["post-text"],
+          postText:
+            req.body["post-text"] !== "null" ? req.body["post-text"] : null,
           userId: req.user_detail.id,
+          postImg: [],
+          postImgId: [],
+          postId: req.body.postId,
         };
-        if (req.file) {
-          comment_detail.postImg = req.file.url;
-          comment_detail.postImgId = req.file.public_id;
+        if (req.body["image"] !== "null") {
+          req.files.map((file) => {
+            comment_detail.postImg.push(file.url);
+            comment_detail.postImgId.push(file.public_id);
+          });
         } else {
-          if (req.body["post-gif"] !== "undefined") {
+          if (req.body["post-gif"] !== "null") {
             comment_detail.postGif = req.body["post-gif"];
           }
         }
@@ -300,6 +307,7 @@ exports.trending_posts = (req, res) => {
         date: 1,
         embedLink: 1,
         postVideo: 1,
+        user_id: 1,
         likesLenght: { $size: "$likes" },
         sharesLength: { $size: "$shares" },
         commentsLength: { $size: "$comments" },
@@ -311,6 +319,7 @@ exports.trending_posts = (req, res) => {
       throw err;
     }
     if (result) {
+      console.log(result);
       res.json({
         saved: "success",
         data: result.slice(fromIndex, fromIndex + 5),
