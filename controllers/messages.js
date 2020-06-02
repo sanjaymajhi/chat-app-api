@@ -60,9 +60,31 @@ exports.getMessageBoxId = (req, res) => {
 
 exports.getMessages = (req, res) => {
   const msgBoxId = req.params.id;
+  Message.findById(msgBoxId)
+    .populate({ path: "user1", select: "f_name l_name username imageUri" })
+    .populate({ path: "user2", select: "f_name l_name username imageUri" })
+    .exec((err, result) => {
+      if (err) {
+        throw err;
+      }
+      if (result) {
+        res.json({
+          saved: "success",
+          msgs: result.chat,
+          user1: result.user1,
+          user2: result.user2,
+        });
+      } else {
+        res.json({ saved: "unsuccessful", error: { msg: "no messages" } });
+      }
+    });
+};
+
+exports.getNewMessages = (req, res) => {
+  const msgBoxId = req.params.id;
   const leave = Number(req.params.leave);
   Message.findOne({ _id: msgBoxId })
-    .select({ chat: { $slice: [leave - 1, 10] } })
+    .select({ chat: { $slice: [leave, $chat.length - leave] } })
     .exec((err, result) => {
       if (err) {
         throw err;
@@ -73,8 +95,6 @@ exports.getMessages = (req, res) => {
           saved: "success",
           msgs: result.chat,
         });
-      } else {
-        res.json({ saved: "unsuccessful", error: { msg: "no messages" } });
       }
     });
 };
