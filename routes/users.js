@@ -59,7 +59,9 @@ router.get("/profile/:id/posts", auth, postController.user_posts);
 router.post("/posts/:type", auth, postController.like_share_post);
 
 router.get("/friend-list", auth, messageController.friend_list);
-router.post("/messages", auth, messageController.getMessages);
+
+router.post("/getMsgBoxId", auth, messageController.getMessageBoxId);
+router.get("/messages/:id/:leave", auth, messageController.getMessages);
 router.post(
   "/sendMsg",
   auth,

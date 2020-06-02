@@ -33,7 +33,7 @@ exports.friend_list = (req, res) => {
     });
 };
 
-exports.getMessages = (req, res) => {
+exports.getMessageBoxId = (req, res) => {
   const idList = [req.user_detail.id, req.body.friend_id];
   Message.findOne({ user1: { $in: idList }, user2: { $in: idList } }).exec(
     (err, result) => {
@@ -41,17 +41,46 @@ exports.getMessages = (req, res) => {
         throw err;
       }
       if (result) {
-        res.json({ saved: "success", msgs: result });
+        res.json({ saved: "success", msgBoxId: result._id });
       } else {
-        res.json({ saved: "unsuccessful", error: { msg: "no messages" } });
+        var msgBox = new Message({
+          user1: req.user_detail.id,
+          user2: req.body.friend_id,
+        });
+        msgBox.save((err) => {
+          if (err) {
+            throw err;
+          }
+          res.json({ saved: "success", msgBoxId: msgBox._id });
+        });
       }
     }
   );
 };
 
+exports.getMessages = (req, res) => {
+  const msgBoxId = req.params.id;
+  const leave = Number(req.params.leave);
+  Message.findOne({ _id: msgBoxId })
+    .select({ chat: { $slice: [leave - 1, 10] } })
+    .exec((err, result) => {
+      if (err) {
+        throw err;
+      }
+      if (result) {
+        console.log(result.chat.length);
+        res.json({
+          saved: "success",
+          msgs: result.chat,
+        });
+      } else {
+        res.json({ saved: "unsuccessful", error: { msg: "no messages" } });
+      }
+    });
+};
+
 exports.sendMessage = [
   validator.body("text").escape(),
-
   (req, res) => {
     var newMsg = { senderId: req.user_detail.id };
     if (req.body.text !== "" && req.body.text !== undefined) {
@@ -62,42 +91,26 @@ exports.sendMessage = [
       newMsg.image = req.file.url;
     }
     console.log(newMsg);
-    if (req.body.msgBoxId === "") {
-      //new msg box will be created
-      var msg = new Message({
-        user1: req.user_detail.id,
-        user2: req.body.friendId,
-        chat: [newMsg],
-      });
-      msg.save((err) => {
-        if (err) {
-          throw err;
-        }
-        res.json({ saved: "success" });
-      });
-    } else {
-      //msg will be appended in old msg box
-      Message.findById(req.body.msgBoxId).exec((err, result) => {
-        if (err) {
-          throw err;
-        }
-        if (result) {
-          result.chat.push(newMsg);
-          var msg = new Message({
-            _id: result._id,
-            user1: result.user1,
-            user2: result.user2,
-            chat: result.chat,
-          });
+    Message.findById(req.body.msgBoxId).exec((err, result) => {
+      if (err) {
+        throw err;
+      }
+      if (result) {
+        result.chat.push(newMsg);
+        var msg = new Message({
+          _id: result._id,
+          user1: result.user1,
+          user2: result.user2,
+          chat: result.chat,
+        });
 
-          Message.findByIdAndUpdate(msg._id, msg, {}, (err) => {
-            if (err) {
-              throw err;
-            }
-            res.json({ saved: "success" });
-          });
-        }
-      });
-    }
+        Message.findByIdAndUpdate(msg._id, msg, {}, (err) => {
+          if (err) {
+            throw err;
+          }
+          res.json({ saved: "success" });
+        });
+      }
+    });
   },
 ];
