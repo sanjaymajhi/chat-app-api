@@ -73,6 +73,7 @@ exports.getMessages = (req, res) => {
           msgs: result.chat,
           user1: result.user1,
           user2: result.user2,
+          id: result._id,
         });
       } else {
         res.json({ saved: "unsuccessful", error: { msg: "no messages" } });

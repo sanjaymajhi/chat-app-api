@@ -71,7 +71,11 @@ router.post(
 );
 
 router.get("/homePosts/", auth, postController.homePosts);
-router.get("/notifications", auth, notificationController.get_notifications);
+router.get(
+  "/notifications/:skip",
+  auth,
+  notificationController.get_notifications
+);
 
 router.get("/friend-suggesstions", auth, userController.friend_suggesstions);
 router.get(

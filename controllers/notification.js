@@ -7,6 +7,7 @@ var User = require("../models/user");
 var Notification = require("../models/notification");
 
 exports.get_notifications = (req, res) => {
+  const skip = Number(req.params.skip);
   User.findById(req.user_detail.id)
     .select("notifications")
     .populate({
@@ -21,7 +22,10 @@ exports.get_notifications = (req, res) => {
         throw err;
       }
       if (result) {
-        res.json({ saved: "success", notifics: result.notifications });
+        res.json({
+          saved: "success",
+          notifics: result.notifications.slice(skip),
+        });
       }
     });
 };

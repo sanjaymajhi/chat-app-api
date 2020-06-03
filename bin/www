@@ -7,6 +7,8 @@
 var app = require("../app");
 var debug = require("debug")("chat-app-api:server");
 var http = require("http");
+var socketio = require("socket.io");
+var Message = require("../models/message");
 
 /**
  * Get port from environment and store in Express.
@@ -20,7 +22,45 @@ app.set("port", port);
  */
 
 var server = http.createServer(app);
+const io = socketio(server);
 
+io.on("connection", (socket) => {
+  console.log("new socket added : ", socket.id);
+  socket.on("message", (data) => {
+    const { msg, roomId } = data;
+    Message.findById(roomId).exec((err, result) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (result) {
+        result.chat.push(msg);
+        var message = new Message({
+          _id: result._id,
+          user1: result.user1,
+          user2: result.user2,
+          chat: result.chat,
+        });
+        Message.findByIdAndUpdate(message._id, message, {}, (err) => {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          console.log("new msg send");
+          socket.broadcast.emit("stopped");
+          io.emit("newMsg", message.chat[message.chat.length - 1]);
+        });
+      }
+    });
+  });
+
+  socket.on("typing", () => socket.broadcast.emit("typing"));
+  socket.on("stopped", () => socket.broadcast.emit("stopped"));
+
+  socket.on("disconnect", () => {
+    console.log(socket.id, " disconnected");
+  });
+});
 /**
  * Listen on provided port, on all network interfaces.
  */
