@@ -84,4 +84,10 @@ router.get(
   postController.trending_posts
 );
 
+router.get(
+  "/get-trending-videos/from/:index",
+  auth,
+  postController.trending_videos
+);
+
 module.exports = router;

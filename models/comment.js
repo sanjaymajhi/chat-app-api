@@ -12,7 +12,7 @@ const Sub_Comment = new Schema({
 });
 
 const Comment = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: "Chat_User" },
+  user_id: { type: Schema.Types.ObjectId, ref: "Chat_User" },
   postId: { type: Schema.Types.ObjectId, ref: "Post" },
   postText: { type: String, default: null, max: 400 },
   postImg: [{ type: String, default: null }],

@@ -66,13 +66,19 @@ exports.create_post = [
 
 exports.user_posts = (req, res) => {
   User.findOne({ username: "@" + req.params.id }, "posts")
-    .populate("posts")
+    .populate({
+      path: "posts",
+      populate: { path: "user_id", select: "f_name l_name username imageUri" },
+    })
     .exec((err, result) => {
       if (err) {
         throw err;
       }
       if (result) {
-        res.json({ saved: "success", posts: result.posts });
+        res.json({
+          saved: "success",
+          posts: result.posts,
+        });
       } else {
         res.json({ saved: "unsuccessful", error: { msg: "user not found" } });
       }
@@ -122,22 +128,30 @@ exports.like_share_post = (req, res) => {
 };
 
 exports.homePosts = (req, res) => {
-  User.findById(req.user_detail.id)
+  User.findOne({ _id: req.user_detail.id }, "following")
     .populate({
       path: "following",
+      select: "posts",
       populate: {
         path: "posts",
-      },
-    })
-    .populate({
-      path: "following",
-      populate: {
-        path: "following",
         populate: {
-          path: "posts",
+          path: "user_id",
+          select: "f_name l_name username imageUri",
         },
       },
     })
+    // .populate({
+    //   path: "following",
+    //   select: "following",
+    //   populate: {
+    //     path: "following",
+    //     select: "posts",
+    //     populate: {
+    //       path: "posts",
+    //       select: "f_name l_name username imageUri",
+    //     },
+    //   },
+    // })
     .exec((err, result) => {
       if (result) {
         var data = [];
@@ -145,12 +159,15 @@ exports.homePosts = (req, res) => {
           item.posts.map((post) => {
             data.push({
               ...post._doc,
-              name: item.f_name + " " + item.l_name,
-              username: item.username,
-              user_imageUri: item.imageUri,
-              user_id: item._id,
             });
           });
+          // item.following.map((people) => {
+          //   people.posts.map((post) => {
+          //     data.push({
+          //       ...post._doc,
+          //     });
+          //   });
+          // });
         });
         res.json({ saved: "success", details: data });
       }
@@ -171,7 +188,7 @@ exports.create_comment = [
         var comment_detail = {
           postText:
             req.body["post-text"] !== "null" ? req.body["post-text"] : null,
-          userId: req.user_detail.id,
+          user_id: req.user_detail.id,
           postImg: [],
           postImgId: [],
           postId: req.body.postId,
@@ -217,38 +234,26 @@ exports.create_comment = [
 ];
 
 exports.find_post = (req, res) => {
-  async.parallel(
-    {
-      post_detail: (callback) =>
-        Post.findById(req.params.id)
-          .populate({
-            path: "comments",
-            populate: {
-              path: "userId",
-              select: "imageUri f_name l_name username",
-            },
-          })
-          .exec(callback),
-      user_detail: (callback) =>
-        User.findOne({ posts: req.params.id }).exec(callback),
-    },
-    (err, result) => {
+  Post.findById(req.params.id)
+    .populate({ path: "user_id", select: "f_name l_name username imageUri" })
+    .populate({
+      path: "comments",
+      populate: {
+        path: "user_id",
+        select: "imageUri f_name l_name username",
+      },
+    })
+    .exec((err, result) => {
       if (err) {
         throw err;
       }
       if (result) {
         res.json({
           saved: "success",
-          details: {
-            ...result.post_detail._doc,
-            imageUri: result.user_detail.imageUri,
-            name: result.user_detail.f_name + " " + result.user_detail.l_name,
-            username: result.user_detail.username,
-          },
+          details: result,
         });
       }
-    }
-  );
+    });
 };
 
 exports.commentOnComment = [
@@ -297,6 +302,14 @@ exports.trending_posts = (req, res) => {
   const fromIndex = Number(req.params.index);
   Post.aggregate([
     {
+      $lookup: {
+        from: "chat_users", //use the name of collection as in mongodb atlas not mongoose model
+        localField: "user_id",
+        foreignField: "_id",
+        as: "user_id",
+      },
+    },
+    {
       $project: {
         postText: 1,
         postImg: 1,
@@ -307,19 +320,75 @@ exports.trending_posts = (req, res) => {
         date: 1,
         embedLink: 1,
         postVideo: 1,
-        user_id: 1,
+        "user_id._id": 1,
+        "user_id.f_name": 1,
+        "user_id.l_name": 1,
+        "user_id.imageUri": 1,
+        "user_id.username": 1,
         likesLenght: { $size: "$likes" },
         sharesLength: { $size: "$shares" },
         commentsLength: { $size: "$comments" },
       },
     },
     { $sort: { likesLength: -1, sharesLength: -1, commentsLength: -1 } },
+    { $unwind: "$user_id" }, //if not used user_id will be array
   ]).exec((err, result) => {
     if (err) {
       throw err;
     }
     if (result) {
-      console.log(result);
+      res.json({
+        saved: "success",
+        data: result.slice(fromIndex, fromIndex + 5),
+      });
+    }
+  });
+};
+
+exports.trending_videos = (req, res) => {
+  const fromIndex = Number(req.params.index);
+  Post.aggregate([
+    {
+      $match: {
+        $or: [{ postVideo: { $ne: null } }, { embedLink: { $ne: null } }],
+      },
+    },
+    {
+      $lookup: {
+        from: "chat_users", //use the name of collection as in mongodb atlas not mongoose model
+        localField: "user_id",
+        foreignField: "_id",
+        as: "user_id",
+      },
+    },
+    {
+      $project: {
+        postText: 1,
+        postImg: 1,
+        postGif: 1,
+        likes: 1,
+        shares: 1,
+        comments: 1,
+        date: 1,
+        embedLink: 1,
+        postVideo: 1,
+        "user_id._id": 1,
+        "user_id.f_name": 1,
+        "user_id.l_name": 1,
+        "user_id.imageUri": 1,
+        "user_id.username": 1,
+        likesLenght: { $size: "$likes" },
+        sharesLength: { $size: "$shares" },
+        commentsLength: { $size: "$comments" },
+      },
+    },
+    { $sort: { likesLength: -1, sharesLength: -1, commentsLength: -1 } },
+    { $unwind: "$user_id" }, //if not used user_id will be array
+  ]).exec((err, result) => {
+    if (err) {
+      throw err;
+    }
+    if (result) {
       res.json({
         saved: "success",
         data: result.slice(fromIndex, fromIndex + 5),

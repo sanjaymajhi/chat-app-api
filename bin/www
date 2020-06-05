@@ -24,8 +24,13 @@ app.set("port", port);
 var server = http.createServer(app);
 const io = socketio(server);
 
-io.on("connection", (socket) => {
+io.sockets.on("connection", (socket) => {
   console.log("new socket added : ", socket.id);
+
+  socket.on("join", (roomId) => {
+    socket.join(roomId);
+  });
+
   socket.on("message", (data) => {
     const { msg, roomId } = data;
     Message.findById(roomId).exec((err, result) => {
@@ -48,7 +53,11 @@ io.on("connection", (socket) => {
           }
           console.log("new msg send");
           socket.broadcast.emit("stopped");
-          io.emit("newMsg", message.chat[message.chat.length - 1]);
+          console.log("newMsgInRoom" + roomId);
+          socket.emit(
+            "newMsgInRoom" + roomId,
+            message.chat[message.chat.length - 1]
+          );
         });
       }
     });
