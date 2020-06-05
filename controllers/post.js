@@ -127,6 +127,46 @@ exports.like_share_post = (req, res) => {
   });
 };
 
+exports.likeComment = (req, res) => {
+  Comment.findById(req.body.postId)
+    .populate("user_id")
+    .exec(async (err, result) => {
+      if (err) {
+        throw err;
+      }
+      var index = result.likes.indexOf(req.user_detail.id);
+      if (index === -1) {
+        result.likes.push(req.user_detail.id);
+      } else {
+        result.likes.splice(index, 1);
+      }
+
+      var comment = new Comment(result);
+      comment.save(async (err) => {
+        if (err) {
+          throw err;
+        }
+        if (index === -1) {
+          await User.findById(result.user_id).exec((err, user) => {
+            if (err) {
+              throw err;
+            }
+            if (user) {
+              req.postId = result.postId;
+              NotificationController.set_notifications(
+                req,
+                res,
+                "likeComment",
+                user
+              );
+            }
+          });
+        }
+        res.json({ saved: "success" });
+      });
+    });
+};
+
 exports.homePosts = (req, res) => {
   User.findOne({ _id: req.user_detail.id }, "following")
     .populate({

@@ -36,6 +36,7 @@ exports.set_notifications = async (req, res, type, userToPushed) => {
       userWhoPushed: req.user_detail.id,
     };
     type !== "follow" ? (notific.postId = req.body.postId) : "";
+    type === "likeComment" ? (notific.postId = req.postId) : "";
     var notification = new Notification(notific);
     await notification.save(async (err) => {
       if (err) {

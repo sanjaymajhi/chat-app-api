@@ -57,6 +57,7 @@ router.post(
 router.get("/profile/:id/posts", auth, postController.user_posts);
 
 router.post("/posts/:type", auth, postController.like_share_post);
+router.post("/comment/like", auth, postController.likeComment);
 
 router.get("/friend-list", auth, messageController.friend_list);
 

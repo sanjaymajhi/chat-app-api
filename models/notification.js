@@ -5,7 +5,7 @@ const Notification = new Schema({
   type: {
     type: String,
     required: true,
-    enum: ["share", "like", "comment", "follow"],
+    enum: ["share", "like", "comment", "follow", "likeComment", "replyComment"],
   },
   userWhoPushed: {
     type: Schema.Types.ObjectId,
