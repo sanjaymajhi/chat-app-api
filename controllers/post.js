@@ -329,12 +329,31 @@ exports.commentOnComment = [
         var newCmtObj = { ...result._doc };
         newCmtObj.sub_comments.push(comment_detail);
         var comment = new Comment(newCmtObj);
-        await Comment.findByIdAndUpdate(comment._id, comment, {}, (err) => {
-          if (err) {
-            throw err;
+        await Comment.findByIdAndUpdate(
+          comment._id,
+          comment,
+          {},
+          async (err) => {
+            if (err) {
+              throw err;
+            }
+            await User.findById(comment.user_id).exec((err, user) => {
+              if (err) {
+                return next(err);
+              }
+              if (user) {
+                req.postId = comment.postId;
+                NotificationController.set_notifications(
+                  req,
+                  res,
+                  "replyComment",
+                  user
+                );
+              }
+            });
+            res.json({ saved: "success" });
           }
-          res.json({ saved: "success" });
-        });
+        );
       }
     });
   },
@@ -446,8 +465,10 @@ exports.likeReply = (req, res, next) => {
     }
     if (result) {
       var comment = { ...result._doc };
+      var userToPushed;
       comment.sub_comments.map((reply) => {
         if (reply._id.toString() === req.body.replyId.toString()) {
+          userToPushed = reply.user_id;
           const index = reply.likes.indexOf(req.user_detail.id);
           if (index === -1) {
             reply.likes.push(req.user_detail.id);
@@ -457,10 +478,24 @@ exports.likeReply = (req, res, next) => {
         }
       });
       const updatedCmt = new Comment(comment);
-      Comment.findByIdAndUpdate(updatedCmt._id, updatedCmt, {}, (err) => {
+      Comment.findByIdAndUpdate(updatedCmt._id, updatedCmt, {}, async (err) => {
         if (err) {
           return next(err);
         }
+        await User.findById(userToPushed).exec((err, user) => {
+          if (err) {
+            return next(err);
+          }
+          if (user) {
+            req.postId = updatedCmt.postId;
+            NotificationController.set_notifications(
+              req,
+              res,
+              "likeReply",
+              user
+            );
+          }
+        });
         res.json({ saved: "success" });
       });
     }
