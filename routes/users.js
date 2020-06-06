@@ -48,10 +48,17 @@ router.post(
 );
 
 router.post(
-  "/profile/post/commentOnComment",
+  "/comment/commentOnComment",
   auth,
   mediaStorage.parserImage.single("image"),
   postController.commentOnComment
+);
+
+router.post(
+  "/comment/commentOnComment/like",
+  auth,
+  mediaStorage.parserImage.single("image"),
+  postController.likeReply
 );
 
 router.get("/profile/:id/posts", auth, postController.user_posts);

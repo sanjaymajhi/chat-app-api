@@ -8,9 +8,9 @@ const NotificationController = require("../controllers/notification");
 
 exports.create_post = [
   validator
-    .body("post-text", "you cannot use more than 400 characters")
+    .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
-  async (req, res) => {
+  async (req, res, next) => {
     console.log(req.file);
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
@@ -21,7 +21,7 @@ exports.create_post = [
       return;
     }
     var post_detail = {
-      postText: req.body["post-text"] !== "null" ? req.body["post-text"] : null,
+      postText: req.body["text"] !== "null" ? req.body["text"] : null,
       embedLink: req.body.embedLink !== "null" ? req.body.embedLink : null,
       postImg: [],
       postImgId: [],
@@ -36,7 +36,7 @@ exports.create_post = [
         post_detail.postImgId.push(file.public_id);
       });
     }
-    if (req.body["post-video"] !== "null") {
+    if (req.body["video"] !== "null") {
       post_detail.postVideo = req.file.url;
       post_detail.postVideoId = req.file.public_id;
     }
@@ -44,13 +44,13 @@ exports.create_post = [
     console.log(post);
     await post.save((err) => {
       if (err) {
-        throw err;
+        return next(err);
       }
     });
     var postId = post._id;
     await User.findById(req.user_detail.id).exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       result.posts.push(postId);
       var user = new User(result);
@@ -64,7 +64,7 @@ exports.create_post = [
   },
 ];
 
-exports.user_posts = (req, res) => {
+exports.user_posts = (req, res, next) => {
   User.findOne({ username: "@" + req.params.id }, "posts")
     .populate({
       path: "posts",
@@ -72,7 +72,7 @@ exports.user_posts = (req, res) => {
     })
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         res.json({
@@ -85,7 +85,7 @@ exports.user_posts = (req, res) => {
     });
 };
 
-exports.like_share_post = (req, res) => {
+exports.like_share_post = (req, res, next) => {
   const type = req.params.type;
   Post.findById(req.body.postId).exec(async (err, result) => {
     if (err) {
@@ -110,7 +110,7 @@ exports.like_share_post = (req, res) => {
     var post = new Post(result);
     post.save(async (err) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (index === -1) {
         await User.findOne({ posts: req.body.postId }).exec((err, result) => {
@@ -127,12 +127,12 @@ exports.like_share_post = (req, res) => {
   });
 };
 
-exports.likeComment = (req, res) => {
-  Comment.findById(req.body.postId)
+exports.likeComment = (req, res, next) => {
+  Comment.findById(req.body.commentId)
     .populate("user_id")
     .exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       var index = result.likes.indexOf(req.user_detail.id);
       if (index === -1) {
@@ -167,7 +167,7 @@ exports.likeComment = (req, res) => {
     });
 };
 
-exports.homePosts = (req, res) => {
+exports.homePosts = (req, res, next) => {
   User.findOne({ _id: req.user_detail.id }, "following")
     .populate({
       path: "following",
@@ -216,31 +216,30 @@ exports.homePosts = (req, res) => {
 
 exports.create_comment = [
   validator
-    .body("post-text", "you cannot use more than 400 characters")
+    .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
-  (req, res) => {
+  (req, res, next) => {
     console.log(req.body);
     Post.findById(req.body.postId).exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         var comment_detail = {
-          postText:
-            req.body["post-text"] !== "null" ? req.body["post-text"] : null,
+          commentText: req.body.text !== "null" ? req.body.text : null,
           user_id: req.user_detail.id,
-          postImg: [],
-          postImgId: [],
+          commentImg: [],
+          commentImgId: [],
           postId: req.body.postId,
         };
-        if (req.body["image"] !== "null") {
+        if (req.body.image !== "null") {
           req.files.map((file) => {
-            comment_detail.postImg.push(file.url);
-            comment_detail.postImgId.push(file.public_id);
+            comment_detail.commentImg.push(file.url);
+            comment_detail.commentImgId.push(file.public_id);
           });
         } else {
-          if (req.body["post-gif"] !== "null") {
-            comment_detail.postGif = req.body["post-gif"];
+          if (req.body.gif !== "null") {
+            comment_detail.commentGif = req.body.gif;
           }
         }
         var comment = new Comment(comment_detail);
@@ -273,7 +272,7 @@ exports.create_comment = [
   },
 ];
 
-exports.find_post = (req, res) => {
+exports.find_post = (req, res, next) => {
   Post.findById(req.params.id)
     .populate({ path: "user_id", select: "f_name l_name username imageUri" })
     .populate({
@@ -283,9 +282,16 @@ exports.find_post = (req, res) => {
         select: "imageUri f_name l_name username",
       },
     })
+    .populate({
+      path: "comments",
+      populate: {
+        path: "sub_comments.user_id",
+        select: "imageUri f_name l_name username",
+      },
+    })
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         res.json({
@@ -298,47 +304,43 @@ exports.find_post = (req, res) => {
 
 exports.commentOnComment = [
   validator
-    .body("post-text", "you cannot use more than 400 characters")
+    .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
-  (req, res) => {
-    console.log(req.body.postId);
+  (req, res, next) => {
+    console.log(req.body);
     Comment.findById(req.body.commentId).exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         var comment_detail = {
-          postText: req.body["post-text"],
-          userId: req.user_detail.id,
+          replyText: req.body["text"] !== "null" ? req.body["text"] : null,
+          user_id: req.user_detail.id,
         };
         if (req.file) {
-          comment_detail.postImg = req.file.url;
-          comment_detail.postImgId = req.file.public_id;
+          comment_detail.replyImg = req.file.url;
+          comment_detail.replyImgId = req.file.public_id;
         } else {
-          if (req.body["post-gif"] !== "undefined") {
-            comment_detail.postGif = req.body["post-gif"];
+          if (req.body["gif"] !== "undefined") {
+            comment_detail.replyGif = req.body["gif"];
           }
         }
-        var sub_comment = new Sub_Comment(comment_detail);
-        await sub_comment.save(async (err) => {
+
+        var newCmtObj = { ...result._doc };
+        newCmtObj.sub_comments.push(comment_detail);
+        var comment = new Comment(newCmtObj);
+        await Comment.findByIdAndUpdate(comment._id, comment, {}, (err) => {
           if (err) {
             throw err;
           }
-          result.sub_comments.push(sub_comment._id);
-          var comment = new Post(result);
-          await Comment.findByIdAndUpdate(comment._id, comment, {}, (err) => {
-            if (err) {
-              throw err;
-            }
-            res.json({ saved: "success" });
-          });
+          res.json({ saved: "success" });
         });
       }
     });
   },
 ];
 
-exports.trending_posts = (req, res) => {
+exports.trending_posts = (req, res, next) => {
   const fromIndex = Number(req.params.index);
   Post.aggregate([
     {
@@ -385,7 +387,7 @@ exports.trending_posts = (req, res) => {
   });
 };
 
-exports.trending_videos = (req, res) => {
+exports.trending_videos = (req, res, next) => {
   const fromIndex = Number(req.params.index);
   Post.aggregate([
     {
@@ -432,6 +434,34 @@ exports.trending_videos = (req, res) => {
       res.json({
         saved: "success",
         data: result.slice(fromIndex, fromIndex + 5),
+      });
+    }
+  });
+};
+
+exports.likeReply = (req, res, next) => {
+  Comment.findById(req.body.commentId).exec((err, result) => {
+    if (err) {
+      return next(err);
+    }
+    if (result) {
+      var comment = { ...result._doc };
+      comment.sub_comments.map((reply) => {
+        if (reply._id.toString() === req.body.replyId.toString()) {
+          const index = reply.likes.indexOf(req.user_detail.id);
+          if (index === -1) {
+            reply.likes.push(req.user_detail.id);
+          } else {
+            reply.likes.splice(index, 1);
+          }
+        }
+      });
+      const updatedCmt = new Comment(comment);
+      Comment.findByIdAndUpdate(updatedCmt._id, updatedCmt, {}, (err) => {
+        if (err) {
+          return next(err);
+        }
+        res.json({ saved: "success" });
       });
     }
   });
