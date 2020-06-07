@@ -9,7 +9,6 @@ var debug = require("debug")("chat-app-api:server");
 var http = require("http");
 var socketio = require("socket.io");
 var Message = require("../models/message");
-var mediaStorage = require("../mediaStorage");
 
 /**
  * Get port from environment and store in Express.
@@ -32,14 +31,16 @@ io.sockets.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("message", async (data) => {
+  socket.on("message", (data) => {
     const { msg, roomId } = data;
+    console.log(msg);
     Message.findById(roomId).exec((err, result) => {
       if (err) {
         console.log(err);
         return;
       }
       if (result) {
+        console.log(msg);
         result.chat.push(msg);
         var message = new Message({
           _id: result._id,
@@ -47,6 +48,7 @@ io.sockets.on("connection", (socket) => {
           user2: result.user2,
           chat: result.chat,
         });
+        console.log(message.chat);
         Message.findByIdAndUpdate(message._id, message, {}, (err) => {
           if (err) {
             console.log(err);

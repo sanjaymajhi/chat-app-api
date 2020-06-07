@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 const Chat = new Schema({
   senderId: { type: Schema.Types.ObjectId, ref: "Chat_User" },
   sent_time: { type: Date, default: Date.now },
+  video: { type: String, default: null },
   text: { type: String, default: null },
   gif: { type: String, default: null },
   image: { type: String, default: null },

@@ -70,7 +70,6 @@ router.get("/friend-list", auth, messageController.friend_list);
 
 router.post("/getMsgBoxId", auth, messageController.getMessageBoxId);
 router.get("/messages/:id/", auth, messageController.getMessages);
-router.get("/messages/:id/:leave", auth, messageController.getNewMessages);
 router.post(
   "/sendMsg",
   auth,
@@ -96,6 +95,20 @@ router.get(
   "/get-trending-videos/from/:index",
   auth,
   postController.trending_videos
+);
+
+router.post(
+  "/uploadChatImage",
+  auth,
+  mediaStorage.parserImage.single("image"),
+  messageController.uploadImageForChat
+);
+
+router.post(
+  "/uploadChatVideo",
+  auth,
+  videoStorage.parserVideo.single("video"),
+  messageController.uploadVideoForChat
 );
 
 module.exports = router;

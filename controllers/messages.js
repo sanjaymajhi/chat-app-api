@@ -81,25 +81,6 @@ exports.getMessages = (req, res) => {
     });
 };
 
-exports.getNewMessages = (req, res) => {
-  const msgBoxId = req.params.id;
-  const leave = Number(req.params.leave);
-  Message.findOne({ _id: msgBoxId })
-    .select({ chat: { $slice: [leave, $chat.length - leave] } })
-    .exec((err, result) => {
-      if (err) {
-        throw err;
-      }
-      if (result) {
-        console.log(result.chat.length);
-        res.json({
-          saved: "success",
-          msgs: result.chat,
-        });
-      }
-    });
-};
-
 exports.sendMessage = [
   validator.body("text").escape(),
   (req, res) => {
@@ -135,3 +116,12 @@ exports.sendMessage = [
     });
   },
 ];
+
+exports.uploadImageForChat = (req, res) => {
+  res.status(200).json({ saved: "success", link: req.file.url });
+};
+
+exports.uploadVideoForChat = (req, res) => {
+  console.log(req.file.url);
+  res.status(200).json({ saved: "success", link: req.file.url });
+};
