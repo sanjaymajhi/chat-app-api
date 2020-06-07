@@ -70,12 +70,6 @@ router.get("/friend-list", auth, messageController.friend_list);
 
 router.post("/getMsgBoxId", auth, messageController.getMessageBoxId);
 router.get("/messages/:id/", auth, messageController.getMessages);
-router.post(
-  "/sendMsg",
-  auth,
-  mediaStorage.parserImage.single("image"),
-  messageController.sendMessage
-);
 
 router.get("/homePosts/", auth, postController.homePosts);
 router.get(

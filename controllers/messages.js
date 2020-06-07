@@ -81,42 +81,6 @@ exports.getMessages = (req, res) => {
     });
 };
 
-exports.sendMessage = [
-  validator.body("text").escape(),
-  (req, res) => {
-    var newMsg = { senderId: req.user_detail.id };
-    if (req.body.text !== "" && req.body.text !== undefined) {
-      newMsg.text = req.body.text;
-    } else if (req.body.gif !== "" && req.body.gif !== undefined) {
-      newMsg.gif = req.body.gif;
-    } else {
-      newMsg.image = req.file.url;
-    }
-    console.log(newMsg);
-    Message.findById(req.body.msgBoxId).exec((err, result) => {
-      if (err) {
-        throw err;
-      }
-      if (result) {
-        result.chat.push(newMsg);
-        var msg = new Message({
-          _id: result._id,
-          user1: result.user1,
-          user2: result.user2,
-          chat: result.chat,
-        });
-
-        Message.findByIdAndUpdate(msg._id, msg, {}, (err) => {
-          if (err) {
-            throw err;
-          }
-          res.json({ saved: "success" });
-        });
-      }
-    });
-  },
-];
-
 exports.uploadImageForChat = (req, res) => {
   res.status(200).json({ saved: "success", link: req.file.url });
 };
