@@ -9,6 +9,7 @@ var debug = require("debug")("chat-app-api:server");
 var http = require("http");
 var socketio = require("socket.io");
 var Message = require("../models/message");
+var mediaStorage = require("../mediaStorage");
 
 /**
  * Get port from environment and store in Express.
@@ -31,7 +32,7 @@ io.sockets.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("message", (data) => {
+  socket.on("message", async (data) => {
     const { msg, roomId } = data;
     Message.findById(roomId).exec((err, result) => {
       if (err) {
@@ -52,19 +53,17 @@ io.sockets.on("connection", (socket) => {
             return;
           }
           console.log("new msg send");
-          socket.broadcast.emit("stopped");
+          socket.broadcast.to(roomId).emit("stopped");
           console.log("newMsgInRoom" + roomId);
-          socket.emit(
-            "newMsgInRoom" + roomId,
-            message.chat[message.chat.length - 1]
-          );
+          io.in(roomId).emit("newMsg", message.chat[message.chat.length - 1]);
         });
       }
     });
   });
 
-  socket.on("typing", () => socket.broadcast.emit("typing"));
-  socket.on("stopped", () => socket.broadcast.emit("stopped"));
+  socket.on("typing", (roomId) => socket.broadcast.to(roomId).emit("typing"));
+  socket.on("stopped", (roomId) => socket.broadcast.to(roomId).emit("stopped"));
+  socket.on("leaveRoom", (roomId) => socket.leave(roomId));
 
   socket.on("disconnect", () => {
     console.log(socket.id, " disconnected");
