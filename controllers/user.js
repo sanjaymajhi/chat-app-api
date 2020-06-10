@@ -454,3 +454,21 @@ exports.friend_suggesstions = (req, res) => {
       }
     });
 };
+
+exports.signOut = (req, res, next) => {
+  User.findById(req.user_detail.id).exec((err, result) => {
+    if (err) {
+      return next(err);
+    }
+    if (result) {
+      var user = { ...result._doc };
+      user.isLoggedIn = false;
+      User.findByIdAndUpdate(user._id, user, {}, (err) => {
+        if (err) {
+          return next(err);
+        }
+        res.status(200).end();
+      });
+    }
+  });
+};

@@ -13,6 +13,7 @@ var videoStorage = require("../videoStorage");
 /* GET users listing. */
 router.post("/login", userController.login);
 router.post("/register", userController.register);
+router.post("/signOut", userController.signOut);
 router.post("/profile", auth, userController.profile);
 router.get("/profile/:id/follow", auth, userController.followPeople);
 router.post("/update", auth, userController.user_update_post);
