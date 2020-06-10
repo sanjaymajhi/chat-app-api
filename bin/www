@@ -66,8 +66,6 @@ io.sockets.on("connection", (socket) => {
 
   socket.on("typing", (roomId) => socket.broadcast.to(roomId).emit("typing"));
   socket.on("stopped", (roomId) => socket.broadcast.to(roomId).emit("stopped"));
-  socket.on("online", (roomId) => socket.broadcast.to(roomId).emit("online"));
-  socket.on("offline", (roomId) => socket.broadcast.to(roomId).emit("offline"));
   socket.on("leaveRoom", (roomId) => socket.leave(roomId));
 
   socket.on("disconnect", () => {
