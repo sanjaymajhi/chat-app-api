@@ -33,14 +33,15 @@ io.sockets.on("connection", (socket) => {
 
   socket.on("message", (data) => {
     const { msg, roomId } = data;
-    console.log(msg);
     Message.findById(roomId).exec((err, result) => {
       if (err) {
         console.log(err);
         return;
       }
       if (result) {
-        console.log(msg);
+        const uuid = msg["uuid"];
+        delete msg["uuid"];
+        delete msg["sent"];
         result.chat.push(msg);
         var message = new Message({
           _id: result._id,
@@ -48,15 +49,13 @@ io.sockets.on("connection", (socket) => {
           user2: result.user2,
           chat: result.chat,
         });
-        console.log(message.chat);
         Message.findByIdAndUpdate(message._id, message, {}, (err) => {
           if (err) {
             console.log(err);
             return;
           }
-          console.log("new msg send");
           socket.broadcast.to(roomId).emit("stopped");
-          console.log("newMsgInRoom" + roomId);
+          socket.to(roomId).emit("sent", uuid);
           socket.broadcast
             .to(roomId)
             .emit("newMsg", message.chat[message.chat.length - 1]);
