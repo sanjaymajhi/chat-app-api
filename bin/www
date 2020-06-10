@@ -57,7 +57,9 @@ io.sockets.on("connection", (socket) => {
           console.log("new msg send");
           socket.broadcast.to(roomId).emit("stopped");
           console.log("newMsgInRoom" + roomId);
-          io.in(roomId).emit("newMsg", message.chat[message.chat.length - 1]);
+          socket.broadcast
+            .to(roomId)
+            .emit("newMsg", message.chat[message.chat.length - 1]);
         });
       }
     });
