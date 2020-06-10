@@ -11,7 +11,6 @@ exports.create_post = [
     .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
   async (req, res, next) => {
-    console.log(req.file);
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
       res.json({
@@ -29,7 +28,6 @@ exports.create_post = [
       postVideoId: null,
       user_id: req.user_detail.id,
     };
-    console.log(req.body);
     if (req.body["image"] !== "null") {
       req.files.map((file) => {
         post_detail.postImg.push(file.url);
@@ -41,7 +39,6 @@ exports.create_post = [
       post_detail.postVideoId = req.file.public_id;
     }
     var post = new Post(post_detail);
-    console.log(post);
     await post.save((err) => {
       if (err) {
         return next(err);
@@ -219,7 +216,6 @@ exports.create_comment = [
     .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
   (req, res, next) => {
-    console.log(req.body);
     Post.findById(req.body.postId).exec(async (err, result) => {
       if (err) {
         return next(err);
@@ -307,7 +303,6 @@ exports.commentOnComment = [
     .body("text", "you cannot use more than 400 characters")
     .isLength({ max: 400 }),
   (req, res, next) => {
-    console.log(req.body);
     Comment.findById(req.body.commentId).exec(async (err, result) => {
       if (err) {
         return next(err);

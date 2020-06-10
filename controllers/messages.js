@@ -6,12 +6,12 @@ const User = require("../models/user");
 const Comment = require("../models/comment");
 const Message = require("../models/message");
 
-exports.friend_list = (req, res) => {
+exports.friend_list = (req, res, next) => {
   User.findById(req.user_detail.id)
     .populate("following")
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         const data = [];
@@ -33,12 +33,12 @@ exports.friend_list = (req, res) => {
     });
 };
 
-exports.getMessageBoxId = (req, res) => {
+exports.getMessageBoxId = (req, res, next) => {
   const idList = [req.user_detail.id, req.body.friend_id];
   Message.findOne({ user1: { $in: idList }, user2: { $in: idList } }).exec(
     (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         res.json({ saved: "success", msgBoxId: result._id });
@@ -58,14 +58,14 @@ exports.getMessageBoxId = (req, res) => {
   );
 };
 
-exports.getMessages = (req, res) => {
+exports.getMessages = (req, res, next) => {
   const msgBoxId = req.params.id;
   Message.findById(msgBoxId)
     .populate({ path: "user1", select: "f_name l_name username imageUri" })
     .populate({ path: "user2", select: "f_name l_name username imageUri" })
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         res.json({
@@ -81,11 +81,10 @@ exports.getMessages = (req, res) => {
     });
 };
 
-exports.uploadImageForChat = (req, res) => {
+exports.uploadImageForChat = (req, res, next) => {
   res.status(200).json({ saved: "success", link: req.file.url });
 };
 
-exports.uploadVideoForChat = (req, res) => {
-  console.log(req.file.url);
+exports.uploadVideoForChat = (req, res, next) => {
   res.status(200).json({ saved: "success", link: req.file.url });
 };

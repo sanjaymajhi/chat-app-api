@@ -6,7 +6,7 @@ var validator = require("express-validator");
 var User = require("../models/user");
 var Notification = require("../models/notification");
 
-exports.get_notifications = (req, res) => {
+exports.get_notifications = (req, res, next) => {
   const skip = Number(req.params.skip);
   User.findById(req.user_detail.id)
     .select("notifications")
@@ -19,7 +19,7 @@ exports.get_notifications = (req, res) => {
     })
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         res.json({
@@ -42,7 +42,7 @@ exports.set_notifications = async (req, res, type, userToPushed) => {
     var notification = new Notification(notific);
     await notification.save(async (err) => {
       if (err) {
-        throw err;
+        console.log(err);
       }
       userToPushed.notifications.push(notification._id);
       await User.findByIdAndUpdate(
@@ -51,7 +51,7 @@ exports.set_notifications = async (req, res, type, userToPushed) => {
         {},
         (err) => {
           if (err) {
-            throw err;
+            console.log(err);
           }
         }
       );

@@ -6,7 +6,7 @@ var validator = require("express-validator");
 var User = require("../models/user");
 var notificationController = require("../controllers/notification");
 
-exports.profile = (req, res) => {
+exports.profile = (req, res, next) => {
   User.findOne({ username: req.body.username }).exec((err, details) => {
     if (details) {
       res.status(200).json({ details: details, id: req.user_detail.id });
@@ -16,7 +16,7 @@ exports.profile = (req, res) => {
   });
 };
 
-exports.followPeople = (req, res) => {
+exports.followPeople = (req, res, next) => {
   async.parallel(
     {
       userToDetails: (callback) =>
@@ -26,7 +26,7 @@ exports.followPeople = (req, res) => {
     },
     async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       const userToDetails = result.userToDetails;
       const userWhoDetails = result.userWhoDetails;
@@ -70,7 +70,7 @@ exports.followPeople = (req, res) => {
   );
 };
 
-exports.upload_pic = async (req, res) => {
+exports.upload_pic = async (req, res, next) => {
   const type = req.params.type;
   const image = {};
   image.url = req.file.url;
@@ -96,19 +96,18 @@ exports.upload_pic = async (req, res) => {
     }
 
     var user_detail = { ...result._doc, ...pics };
-    console.log(user_detail);
     var user = new User(user_detail);
 
     await User.findByIdAndUpdate(user._id, user, (err) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       res.status(200).json({ saved: "success" });
     });
   });
 };
 
-exports.search = (req, res) => {
+exports.search = (req, res, next) => {
   User.find(
     {
       f_name: new RegExp(req.body.value, "i"),
@@ -139,7 +138,7 @@ exports.register = [
     .isLength({ min: 8, max: 15 }),
   validator.body("email", "Invalid Email").trim().isEmail(),
 
-  (req, res) => {
+  (req, res, next) => {
     if (req.body.method === "native") {
       const errors = validator.validationResult(req);
       if (!errors.isEmpty()) {
@@ -152,7 +151,7 @@ exports.register = [
     }
     User.find({ email: req.body.email }, "email").exec(async (err, email) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (email.length) {
         res.json({
@@ -214,7 +213,7 @@ exports.user_update_post = [
     .trim()
     .isLength({ min: 10, max: 200 }),
 
-  (req, res) => {
+  (req, res, next) => {
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
       res.json({
@@ -287,7 +286,7 @@ exports.login = [
     .isEmail(),
   validator.body("password", "Invalid Password").isLength({ min: 5 }).trim(),
 
-  (req, res) => {
+  (req, res, next) => {
     if (req.body.method === "native") {
       const errors = validator.validationResult(req);
       if (!errors.isEmpty()) {
@@ -301,7 +300,7 @@ exports.login = [
 
     User.findOne({ email: req.body.email }).exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (!result) {
         res.json({
@@ -374,7 +373,7 @@ exports.change_pass = [
     .isLength({ min: 8, max: 15 })
     .trim(),
 
-  (req, res) => {
+  (req, res, next) => {
     const errors = validator.validationResult(req);
     if (!errors.isEmpty()) {
       res.json({ saved: "unsuccessful", error: errors.array() });
@@ -382,7 +381,7 @@ exports.change_pass = [
     }
     User.findOne({ _id: req.user_detail.id }).exec(async (err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result == null) {
         res.json({
@@ -415,7 +414,7 @@ exports.change_pass = [
   },
 ];
 
-exports.friend_suggesstions = (req, res) => {
+exports.friend_suggesstions = (req, res, next) => {
   User.findById(req.user_detail.id)
     .select("following")
     .populate({
@@ -428,7 +427,7 @@ exports.friend_suggesstions = (req, res) => {
     })
     .exec((err, result) => {
       if (err) {
-        throw err;
+        return next(err);
       }
       if (result) {
         //own id and own friends id
