@@ -55,7 +55,7 @@ io.sockets.on("connection", (socket) => {
             return;
           }
           socket.broadcast.to(roomId).emit("stopped");
-          socket.to(roomId).emit("sent", uuid);
+          io.in(roomId).emit("sent", { uuid: uuid, senderId: msg.senderId });
           socket.broadcast
             .to(roomId)
             .emit("newMsg", message.chat[message.chat.length - 1]);
