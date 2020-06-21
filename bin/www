@@ -68,6 +68,8 @@ io.sockets.on("connection", (socket) => {
   socket.on("stopped", (roomId) => socket.broadcast.to(roomId).emit("stopped"));
   socket.on("leaveRoom", (roomId) => socket.leave(roomId));
 
+  socket.on("comment", (roomId) => socket.broadcast.to(roomId).emit("newCmt"));
+
   socket.on("disconnect", () => {
     console.log(socket.id, " disconnected");
   });
