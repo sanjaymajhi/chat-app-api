@@ -363,6 +363,56 @@ exports.login = [
   },
 ];
 
+exports.loginByToken = (req, res, next) => {
+  User.findById(req.user_detail.id).exec(async (err, result) => {
+    if (err) {
+      return next(err);
+    }
+    if (!result) {
+      res.json({
+        saved: "unsuccessful",
+        error: { msg: "Email does not exists" },
+      });
+      return;
+    } else {
+      var payload = {
+        user: {
+          id: result._id,
+        },
+      };
+      await jwt.sign(
+        payload,
+        "sanjay",
+        { expiresIn: 3600 },
+        async (err, token) => {
+          if (err) {
+            throw err;
+          }
+          var userCopy = {
+            ...result._doc,
+            last_login: Date.now(),
+            isLoggedIn: true,
+          };
+          await User.findByIdAndUpdate(userCopy._id, userCopy, {}, (err) => {
+            if (err) {
+              throw err;
+            }
+          });
+          res.status(200).json({
+            saved: "success",
+            token: token,
+            _id: result._id,
+            username: result.username.split("@")[1],
+            f_name: result.f_name,
+            l_name: result.l_name,
+            imageUri: result.imageUri,
+          });
+        }
+      );
+    }
+  });
+};
+
 exports.change_pass = [
   validator
     .body("c_pass", "old password cannot be empty")

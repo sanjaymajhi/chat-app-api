@@ -12,6 +12,7 @@ var videoStorage = require("../videoStorage");
 
 /* GET users listing. */
 router.post("/login", userController.login);
+router.get("/loginByToken", auth, userController.loginByToken);
 router.post("/register", userController.register);
 router.post("/signOut", auth, userController.signOut);
 router.post("/profile", auth, userController.profile);
