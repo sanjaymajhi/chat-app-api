@@ -4,6 +4,9 @@ This project consists of website that can be used to chat with people, post phot
 This project is in progress.
 Client side repo : https://github.com/sanjaymajhi/chat-app-client
 
+# Project Deloyed
+Website : http://chat-app-by-sanjay.herokuapp.com/login
+
 # Below is an example nginx for deployment
 
 ```
