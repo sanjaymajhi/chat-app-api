@@ -41,11 +41,11 @@ API_SECRET=<generate from cloudinary>
 
 # Project Deployed in Heroku PaaS
 
-Website : http://chat-app-by-sanjay.herokuapp.com/login
-Demo Video : https://www.linkedin.com/feed/update/urn:li:activity:6676831891921915904/
+1. Website : http://chat-app-by-sanjay.herokuapp.com/login
+2. Demo Video : https://www.linkedin.com/feed/update/urn:li:activity:6676831891921915904/
 
 
-# Below is an example nginx for deployment
+# Below is an example nginx for deployment in AWS
 
 ```
 server{
